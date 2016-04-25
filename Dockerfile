@@ -1,58 +1,35 @@
-FROM httpd:2.4
+FROM ubuntu:latest
 
-MAINTAINER s307046@studssh.cs.hioa.no
+MAINTAINER Dan Pupius <dan@pupi.us>
 
-# Create 'me' group whith gid 1000 and 'me' user in this group with uid 1000
-RUN groupadd -f -g 1000 me && useradd -u 1000 -g me me
+RUN apt-get update
+RUN apt-get -y upgrade
 
-RUN [ -d /var/log/httpd ] || mkdir /var/log/httpd
-RUN [ -d /var/run/httpd ] || mkdir /var/run/httpd
-RUN [ -d /var/lock/httpd ] || mkdir /var/lock/httpd
+# Install apache, PHP, and supplimentary programs. curl and lynx-cur are for debugging the container.
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install apache2 libapache2-mod-php5 php5-mysql php5-gd php-pear php-apc php5-curl curl lynx-cur
 
-RUN sed -i.orig 's/#ServerName/ServerName/' /etc/httpd/conf/httpd.conf
+# Enable apache mods.
+RUN a2enmod php5
+RUN a2enmod rewrite
 
-ENV APACHE_RUN_USER apache
-ENV APACHE_RUN_GROUP apache
-ENV APACHE_LOG_DIR /var/log/httpd
-ENV APACHE_LOCK_DIR /var/lock/httpd
-ENV APACHE_RUN_DIR /var/run/httpd
-ENV APACHE_PID_FILE /var/run/httpd/httpd.pid
+# Update the PHP.ini file, enable <? ?> tags and quieten logging.
+RUN sed -i "s/short_open_tag = Off/short_open_tag = On/" /etc/php5/apache2/php.ini
+RUN sed -i "s/error_reporting = .*$/error_reporting = E_ERROR | E_WARNING | E_PARSE/" /etc/php5/apache2/php.ini
 
+# Manually set up the apache environment variables
+ENV APACHE_RUN_USER www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_LOG_DIR /var/log/apache2
+ENV APACHE_LOCK_DIR /var/lock/apache2
+ENV APACHE_PID_FILE /var/run/apache2.pid
 
-# Define apache listen port on a port greater than 1024 to allow a non-root user (me) to start apache
-RUN sed -i 's/Listen\ 80/Listen\ 1080/g' /usr/local/apache2/conf/httpd.conf
+EXPOSE 80
 
-# Allow apache to run with 'me' user
-RUN chown -R me:me /usr/local/apache2/
+# Copy site into place.
+ADD www /var/www/site
 
-# Start container as me
-USER me
+# Update the default apache site with the config we created.
+ADD apache-config.conf /etc/apache2/sites-enabled/000-default.conf
 
-
-
-
-# FROM ubuntu:14.04
-# RUN apt-get update && apt-get -y install apache2
-# ADD index.html /var/www/html/index.html
-# RUN mkdir /var/www/test && echo "<html><body><h1>Running from Sufi Docker</h1></body></html>" >> /var/www/test/index.html
-# echo "<h1>Running from Sufi Docker on CoreOS</h1>" > /var/www/html/index.html
-# EXPOSE 8080
-# CMD ["/usr/sbin/apache2ctl", "-D", "FOREGROUND" ]
-
-
-# Enable EPEL for Node.js
-# RUN rpm -Uvh http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
-
-# Install Node...
-# RUN yum install -y npm
-
-# Copy app to /src
-# COPY . /src
-
-# Install app and dependencies into /src
-# RUN cd /src; npm install
-
-#EXPOSE 8080
-
-#CMD cd /src && node ./app.js
-
+# By default, simply start apache.
+CMD /usr/sbin/apache2ctl -D FOREGROUND
