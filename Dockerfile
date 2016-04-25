@@ -7,7 +7,7 @@ RUN groupadd -f -g 1000 me && useradd -u 1000 -g me me
 
 # Define apache listen port on a port greater than 1024 to allow a non-root user (me) to start apache
 RUN sed -i 's/Listen\ 80/Listen\ 1080/g' /usr/local/apache2/conf/httpd.conf
-RUN mkdir /var/www/test && echo "<html><body><h1>Running from Sufi Docker</h1></body></html>" >> /var/www/test/index.html
+# RUN mkdir /var/www/test && echo "<html><body><h1>Running from Sufi Docker</h1></body></html>" >> /var/www/test/index.html
 
 # Allow apache to run with 'me' user
 RUN chown -R me:me /usr/local/apache2/
