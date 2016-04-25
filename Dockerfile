@@ -3,8 +3,8 @@ FROM ubuntu:14.04
 MAINTAINER s307046@studssh.cs.hioa.no
 
 RUN apt-get update && apt-get -y install apache2
-RUN mkdir /var/www/html
-ADD index.html /var/www/html/index.html
+
+ADD index.html /var/www/index.html
 RUN mkdir /var/www/test && echo "<html><body><h1>Running from Sufi Docker</h1></body></html>" >> /var/www/test/index.html
 # echo "<h1>Running from Sufi Docker on CoreOS</h1>" > /var/www/html/index.html
 EXPOSE 8080
