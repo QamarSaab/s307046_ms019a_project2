@@ -1,13 +1,13 @@
-FROM centos:latest
+FROM eboraas/debian:stable
 
-RUN yum -y update && yum clean all
-RUN yum -y install httpd && yum clean all
+RUN apt-get update && apt-get -y install apache2 && apt-get clean
+ENV APACHE_RUN_USER www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_LOG_DIR /var/log/apache2
+RUN /usr/sbin/a2ensite default-ssl
+RUN /usr/sbin/a2enmod ssl
 
 EXPOSE 80
+EXPOSE 443
 
-# Simple startup script to avoid some issues observed with container restart
-
-ADD run-httpd.sh /run-httpd.sh
-RUN chmod -v +x /run-httpd.sh
-
-CMD ["/run-httpd.sh"]
+CMD ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
